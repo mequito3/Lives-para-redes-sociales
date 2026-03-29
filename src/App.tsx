@@ -24,8 +24,7 @@ import {
   AlertCircle,
   ChevronRight,
   ThumbsUp,
-  ExternalLink,
-  Sparkles
+  ExternalLink
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { fetchPendingRequests, createSongRequest, updateSongRequestAPI, deleteSongRequestAPI, fetchStreamerStatus, updateStreamerStatusAPI } from './api-client';
@@ -46,16 +45,15 @@ interface SongRequest {
   votosUsuarios?: string[]; // Para evitar votos duplicados por sesión
 }
 
-export interface YouTubeResult {
-  id: {
-    videoId: string;
+interface YouTubeResult {
+  id: { 
+    kind: string;
+    videoId?: string;
   };
   snippet: {
     title: string;
     thumbnails: {
-      default?: { url: string };
-      medium?: { url: string };
-      high?: { url: string };
+      medium: { url: string };
     };
   };
 }
@@ -143,13 +141,15 @@ export default function App() {
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [apiKey, setApiKey] = useState(() => import.meta.env.VITE_YOUTUBE_API_KEY || '');
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('jukebox_api_key') || import.meta.env.VITE_YOUTUBE_API_KEY || '');
   const [showConfig, setShowConfig] = useState(false);
   const [streamerPass, setStreamerPass] = useState('');
   const [isStreamerAuth, setIsStreamerAuth] = useState(false);
   const [passError, setPassError] = useState(false);
 
-  // Removed persistent setting of apiKey since settings gear was removed
+  useEffect(() => {
+    localStorage.setItem('jukebox_api_key', apiKey);
+  }, [apiKey]);
 
   const handleStreamerLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -174,26 +174,47 @@ function AppContent() {
               <UserView apiKey={apiKey} />
             </main>
             
-            {/* Footer Americo Labs */}
-            <footer className="max-w-6xl mx-auto px-4 pb-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-6 border-t border-white/5">
-              <p className="text-sm font-medium text-white/40">
-                © {new Date().getFullYear()} Americo Labs. Todos los derechos reservados.
-              </p>
-              <a 
-                href="https://portafolio.americolabs.com/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="group flex items-center gap-2.5 px-5 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-full transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(16,185,129,0.15)]"
+            {/* Hidden/Small Config button at bottom */}
+            <div className="fixed bottom-4 right-4 z-50">
+              <button 
+                onClick={() => setShowConfig(!showConfig)}
+                className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-white/10 hover:text-white/40 transition-all"
+                title="Configuración API"
               >
-                <span className="text-[10px] font-bold tracking-widest uppercase text-emerald-500/80">
-                  DISEÑADO POR
-                </span>
-                <span className="text-sm font-extrabold text-emerald-400">
-                  Americo Labs
-                </span>
-                <ExternalLink className="w-3.5 h-3.5 text-emerald-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-              </a>
-            </footer>
+                <Settings className="w-4 h-4" />
+              </button>
+            </div>
+
+            {showConfig && (
+              <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="max-w-md w-full p-6 bg-[#1a1a1a] border border-white/10 rounded-[32px] space-y-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-bold">Configuración API</h3>
+                    <button onClick={() => setShowConfig(false)} className="text-white/40 hover:text-white">✕</button>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-white/40 uppercase block">YouTube API Key</label>
+                    <input 
+                      type="password" 
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      placeholder="API Key..."
+                      className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 focus:border-orange-500 outline-none"
+                    />
+                  </div>
+                  <button 
+                    onClick={() => setShowConfig(false)}
+                    className="w-full bg-orange-600 hover:bg-orange-500 py-3 rounded-xl font-bold transition-all"
+                  >
+                    Guardar Cambios
+                  </button>
+                </motion.div>
+              </div>
+            )}
           </div>
         } />
 
@@ -314,20 +335,29 @@ function UserView({ apiKey }: { apiKey: string }) {
     localStorage.setItem('jukebox_user', userName);
   }, [userName]);
 
-  // Poll streamer status and queue
+  // Initialize Socket.IO connection
   useEffect(() => {
-    const fetchStatus = async () => {
-      try {
-        const { isLive } = await fetchStreamerStatus();
-        setIsLive(isLive);
-      } catch (error) {
-        console.error('Error fetching status:', error);
-      }
-    };
+    initializeSocket();
+    requestStatus(); // Request initial status
+    requestSongs(); // Request initial songs
+  }, []);
 
-    fetchStatus();
-    const interval = setInterval(fetchStatus, 5000);
-    return () => clearInterval(interval);
+  // Listen to streamer status via Socket.IO
+  useEffect(() => {
+    onStatusUpdated((status) => {
+      setIsLive(status.isLive);
+    });
+
+    return () => offStatusUpdated();
+  }, []);
+
+  // Listen to queue via Socket.IO
+  useEffect(() => {
+    onSongsUpdated((songs) => {
+      setQueue(songs);
+    });
+
+    return () => offSongsUpdated();
   }, []);
 
   // Dynamic search with debounce
@@ -364,7 +394,7 @@ function UserView({ apiKey }: { apiKey: string }) {
     if (e) e.preventDefault();
     
     if (!apiKey) {
-      setMessage({ text: "⚠️ Falta la API Key de YouTube. Configúrala en el archivo .env", type: 'error' });
+      setMessage({ text: "⚠️ Falta la API Key de YouTube. Configúrala en el icono de engranaje.", type: 'error' });
       return;
     }
 
@@ -373,61 +403,41 @@ function UserView({ apiKey }: { apiKey: string }) {
     }
 
     setLoading(true);
+    // Don't clear results immediately to avoid flickering during dynamic search
+    // setResults([]); 
 
-    const keys = apiKey.split(',').map(k => k.trim()).filter(Boolean);
-    let success = false;
-    let lastError = null;
-
-    for (const key of keys) {
-      try {
-        const musicFilter = '&videoCategoryId=10';
-        const res = await fetch(
-          `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(queryStr)}&maxResults=6&type=video${musicFilter}&key=${key}`
-        );
-        
-        if (!res.ok) {
-          const errorData = await res.json();
-          // If quota exceeded or another API Key error, throw to catch and retry next key
-          throw new Error(errorData.error?.message || "Error desconocido de YouTube");
-        }
-
-        const data = await res.json();
-        
-        if (!data.items || data.items.length === 0) {
-          setMessage({ text: "No se encontraron resultados para esa búsqueda.", type: 'error' });
-        } else {
-          const filteredResults = data.items.filter((item: any) => item.id && item.id.videoId);
-          if (filteredResults.length === 0) {
-            setMessage({ text: "No se encontraron videos válidos.", type: 'error' });
-          }
-          setResults(filteredResults);
-        }
-        
-        // Success! We don't need to try the next key
-        success = true;
-        break; 
-        
-      } catch (err: any) {
-        lastError = err;
-        console.warn(`Límite alcanzado o error en la llave ${key.substring(0, 5)}... probando otra si existe.`);
+    try {
+      const musicFilter = '&videoCategoryId=10';
+      const res = await fetch(
+        `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(queryStr)}&maxResults=6&type=video${musicFilter}&key=${apiKey}`
+      );
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error?.message || "Error desconocido de YouTube");
       }
-    }
 
-    if (!success && lastError) {
-      console.error(lastError);
-      const errorMsg = (lastError as Error).message.toLowerCase();
-      if (errorMsg.includes('quota') || errorMsg.includes('exceeded') || errorMsg.includes('key') || errorMsg.includes('403')) {
-        setMessage({ text: "❌ La Rockola está descansando: Las llaves llegaron a su límite o no están habilitadas. ¡Añade más magia en la consola de Google!", type: 'error' });
+      const data = await res.json();
+      
+      if (!data.items || data.items.length === 0) {
+        setMessage({ text: "No se encontraron resultados para esa búsqueda.", type: 'error' });
       } else {
-        setMessage({ text: "❌ Ocurrió un problema en la búsqueda: " + (lastError as Error).message, type: 'error' });
+        // Filter to ensure we only have videos with IDs
+        const filteredResults = data.items.filter((item: any) => item.id && item.id.videoId);
+        if (filteredResults.length === 0) {
+          setMessage({ text: "No se encontraron videos válidos.", type: 'error' });
+        }
+        setResults(filteredResults);
       }
+    } catch (err: any) {
+      console.error(err);
+      setMessage({ text: "❌ Error: " + err.message, type: 'error' });
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const handleRequest = async (video: YouTubeResult) => {
-    console.log("CACHE_BUSTER_NEW_UI");
     const videoId = video.id?.videoId;
 
     if (!videoId) {
@@ -441,42 +451,22 @@ function UserView({ apiKey }: { apiKey: string }) {
     }
 
     setRequesting(videoId);
-    
-    // Obtener duración del video probando cada llave disponible
-    const keys = apiKey.split(',').map(k => k.trim()).filter(Boolean);
-    let durationParsed = null;
-    let fallbackError = null;
-
-    for (const key of keys) {
-      try {
-        const durRes = await fetch(
-          `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoId}&key=${key}`
-        );
-        
-        if (!durRes.ok) {
-           throw new Error("DurRes Error");
-        }
-        
-        const durData = await durRes.json();
-        
-        if (durData.items && durData.items.length > 0) {
-          durationParsed = durData.items[0].contentDetails.duration;
-          break; // Funciona, salimos del loop
-        }
-      } catch (e: any) {
-        fallbackError = e;
-      }
-    }
-
     try {
-      // Create request in backend con la duracion encontrada
+      // Obtener duración del video
+      const durRes = await fetch(
+        `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoId}&key=${apiKey}`
+      );
+      const durData = await durRes.json();
+      const durationStr = durData.items?.[0]?.contentDetails?.duration || 'PT4M';
+      const durationSec = parseYouTubeDuration(durationStr);
+
       await createSongRequest({
         usuario: userName,
         youtube_id: videoId,
         titulo: video.snippet.title,
-        miniatura: video.snippet.thumbnails.high?.url || video.snippet.thumbnails.default?.url || '',
-        duracion: durationParsed ? parseYouTubeDuration(durationParsed) : 240,
+        miniatura: video.snippet.thumbnails.medium.url,
         reproducida: false,
+        duracion: durationSec,
         votos: 0,
         votosUsuarios: []
       });
@@ -701,23 +691,6 @@ function UserView({ apiKey }: { apiKey: string }) {
           )}
         </div>
       </div>
-
-      {/* Próximamente Teaser */}
-      <div className="mt-16 flex justify-center pb-4">
-        <div className="inline-flex flex-col items-center gap-3 px-8 py-6 bg-gradient-to-t from-orange-500/10 to-transparent border border-orange-500/20 rounded-3xl cursor-default transition-all duration-500 hover:border-orange-500/40 group">
-          <div className="bg-orange-500/20 p-2 rounded-full group-hover:bg-orange-500/30 transition-colors">
-            <Sparkles className="w-5 h-5 text-orange-400" />
-          </div>
-          <div className="text-center space-y-1">
-            <span className="block text-sm font-black tracking-widest uppercase text-orange-500/80 group-hover:text-orange-400 transition-colors">
-              Nuevas Funcionalidades Muy Pronto
-            </span>
-            <span className="block text-xs text-white/30 font-medium max-w-xs mx-auto">
-              Estamos trabajando en sorpresas y opciones especiales para interactuar mejor con la Jukebox.
-            </span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
@@ -737,7 +710,7 @@ function StreamerView() {
   const [playerReady, setPlayerReady] = useState(false);
   const [hasStarted, setHasStarted] = useState(() => localStorage.getItem('jukebox_started') === 'true');
   const playerRef = useRef<any>(null);
-  const currentSongIdRef = useRef<number | null>(null);
+  const currentSongIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     localStorage.setItem('jukebox_started', String(hasStarted));
@@ -794,27 +767,23 @@ function StreamerView() {
     }
   }, []);
 
-  // Escuchar pedidos via Polling HTTP
+  // Escuchar pedidos via Socket.IO
   useEffect(() => {
-    const fetchPedidos = async () => {
-      try {
-        const list = await fetchPendingRequests();
-        setPedidos(list);
+    initializeSocket();
 
-        const isCurrentStillPending = list.some(s => s.id === currentSongIdRef.current);
+    onSongsUpdated((list) => {
+      setPedidos(list);
 
-        if (list.length > 0 && (!currentSongIdRef.current || !isCurrentStillPending)) {
-          setCurrentSong(list[0]);
-        }
-      } catch (error) {
-        console.error('Error fetching queue:', error);
+      // Check if the current song is still in the pending list
+      const isCurrentStillPending = list.some(s => s.id === currentSongIdRef.current);
+
+      // If no song is playing OR the current song is no longer in the pending list, pick the first one
+      if (list.length > 0 && (!currentSongIdRef.current || !isCurrentStillPending)) {
+        setCurrentSong(list[0]);
       }
-    };
+    });
 
-    fetchPedidos();
-    const interval = setInterval(fetchPedidos, 3000); // Check every 3 seconds
-
-    return () => clearInterval(interval);
+    return () => offSongsUpdated();
   }, []);
 
   // Inicializar o actualizar el reproductor
@@ -867,32 +836,17 @@ function StreamerView() {
     }
   }, [playerReady, currentSong, hasStarted]);
 
-  const markingRef = useRef<number | null>(null);
-  const pedidosRef = useRef<SongRequest[]>([]);
+  const markingRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    pedidosRef.current = pedidos;
-  }, [pedidos]);
-
-  const markAsPlayed = async (id: number) => {
+  const markAsPlayed = async (id: string) => {
     if (!id || markingRef.current === id) return;
     markingRef.current = id;
     
-    // Optimistic update: use fresh array to avoid stale closures in YouTube events
-    const freshPedidos = pedidosRef.current;
-    const currentIndex = freshPedidos.findIndex(p => p.id === id);
-    
-    if (currentIndex !== -1 && currentIndex < freshPedidos.length - 1) {
-      const nextSong = freshPedidos[currentIndex + 1];
-      setCurrentSong(nextSong);
-      
-      // Force play video inside trusted event tick
-      if (playerRef.current && playerRef.current.loadVideoById) {
-        try {
-          playerRef.current.loadVideoById(nextSong.youtube_id);
-        } catch(e) { }
-      }
-    } else if (freshPedidos.length <= 1) {
+    // Optimistic update: find next song in current list
+    const currentIndex = pedidos.findIndex(p => p.id === id);
+    if (currentIndex !== -1 && currentIndex < pedidos.length - 1) {
+      setCurrentSong(pedidos[currentIndex + 1]);
+    } else if (pedidos.length <= 1) {
       setCurrentSong(null);
     }
 
@@ -1061,104 +1015,88 @@ function StreamerView() {
 
 function OverlayView() {
   const [currentSong, setCurrentSong] = useState<SongRequest | null>(null);
+  const [nextSong, setNextSong] = useState<SongRequest | null>(null);
 
   useEffect(() => {
-    const fetchPedidos = async () => {
-      try {
-        const list = await fetchPendingRequests();
-        if (list.length > 0) {
-          setCurrentSong(list[0]);
-        } else {
-          setCurrentSong(null);
-        }
-      } catch (error) {
-        console.error('Error fetching queue:', error);
+    initializeSocket();
+
+    onSongsUpdated((list) => {
+      if (list.length > 0) {
+        setCurrentSong(list[0]);
+        setNextSong(list[1] || null);
+      } else {
+        setCurrentSong(null);
+        setNextSong(null);
       }
-    };
+    });
 
-    fetchPedidos();
-    const interval = setInterval(fetchPedidos, 3000); // Check every 3 seconds
-
-    return () => clearInterval(interval);
+    return () => offSongsUpdated();
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-transparent flex justify-center items-end p-4 pb-12 overflow-hidden pointer-events-none">
+    <div className="fixed inset-0 bg-transparent flex items-end p-4 sm:p-8 overflow-hidden pointer-events-none">
       <AnimatePresence mode="wait">
         {!currentSong ? (
           <motion.div
-            initial={{ y: 50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 50, opacity: 0 }}
-            className="relative flex items-center gap-6 bg-black/90 backdrop-blur-2xl border-2 border-orange-500/30 p-4 pr-10 rounded-full shadow-[0_0_50px_rgba(234,88,12,0.3)] w-auto min-w-[340px] pl-24"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
+            exit={{ opacity: 0 }}
+            className="text-[9px] sm:text-[10px] font-black text-white/20 uppercase tracking-[0.3em] ml-2 sm:ml-4 mb-2 sm:mb-4"
           >
-            {/* Massive Pop-out QR */}
-            <div className="absolute -top-10 -left-4 bg-white p-2 rounded-3xl shadow-[0_15px_35px_rgba(0,0,0,0.6)] -rotate-6 border-4 border-orange-500">
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://live.americolabs.com" alt="QR" className="w-[85px] h-[85px] mix-blend-multiply" />
-            </div>
-            
-            <div className="flex flex-col">
-              <div className="text-[12px] font-black text-orange-500 uppercase tracking-[0.3em] mb-1 flex items-center gap-2">
-                <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
-                ROCKOLA TOTAL
-              </div>
-              <span className="text-[14px] font-black text-white leading-tight uppercase">Mándame tu música aquí</span>
-            </div>
+            Overlay Activo • Esperando Petición
           </motion.div>
         ) : (
           <motion.div 
-            initial={{ y: 80, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 80, opacity: 0 }}
+            initial={{ x: -100, opacity: 0, scale: 0.8 }}
+            animate={{ x: 0, opacity: 1, scale: 1 }}
+            exit={{ x: 100, opacity: 0, scale: 0.8 }}
             key={currentSong.id}
-            className="relative flex flex-row items-center gap-4 bg-gradient-to-r from-black via-zinc-950 to-black/95 backdrop-blur-3xl border-2 border-orange-500/40 p-3 rounded-[35px] shadow-[0_0_60px_rgba(234,88,12,0.25)] w-full max-w-[440px] mt-12"
+            className="flex items-center gap-4 sm:gap-6 bg-black/95 backdrop-blur-xl border border-orange-500/20 p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] shadow-2xl shadow-orange-600/10 w-full sm:max-w-2xl"
           >
-            {/* Left: Huge Thumbnail */}
-            <div className="relative w-[85px] h-[85px] flex-shrink-0 rounded-[24px] overflow-hidden shadow-2xl border-2 border-white/10">
+            {/* Album Art / Thumbnail */}
+            <div className="relative w-16 h-16 sm:w-24 sm:h-24 rounded-xl sm:rounded-2xl overflow-hidden flex-shrink-0 shadow-lg border-2 border-orange-500/30">
               <img src={currentSong.miniatura} alt="" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-black/30" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
               
-              {/* Audio Bars */}
-              <div className="absolute bottom-2 w-full flex justify-center items-end gap-1 h-5">
-                {[1, 2, 3, 4, 5].map((i) => (
+              {/* Animated Audio Bars */}
+              <div className="absolute bottom-1 sm:bottom-2 left-1/2 -translate-x-1/2 flex items-end gap-0.5 h-3 sm:h-4">
+                {[1, 2, 3, 4].map((i) => (
                   <motion.div
                     key={i}
-                    animate={{ height: [4, 18, 6, 24, 10] }}
+                    animate={{ height: [3, 10, 5, 14, 7] }}
                     transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.1 }}
-                    className="w-[4px] bg-orange-500 rounded-full shadow-[0_0_10px_rgba(234,88,12,1)]"
+                    className="w-0.5 sm:w-1 bg-orange-500 rounded-full"
                   />
                 ))}
               </div>
             </div>
 
-            {/* Middle: Info */}
-            <div className="flex-1 min-w-0 pr-12 space-y-1">
-              <div className="inline-flex bg-orange-600 px-2 py-0.5 rounded-md flex items-center gap-1.5 shadow-lg">
-                 <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                 <span className="text-[8px] font-black text-white uppercase tracking-widest">SONANDO AHORA</span>
+            {/* Song Info */}
+            <div className="flex-1 min-w-0 space-y-0.5 sm:space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-1.5 py-0.5 bg-orange-600 text-[8px] sm:text-[10px] font-black rounded-full uppercase tracking-tighter text-white">SONANDO AHORA</span>
+                {currentSong.votos && currentSong.votos > 0 && (
+                  <div className="flex items-center gap-1 text-orange-500 text-[8px] sm:text-[10px] font-bold bg-orange-500/10 px-1.5 py-0.5 rounded-full">
+                    <ThumbsUp className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                    {currentSong.votos} VOTOS
+                  </div>
+                )}
               </div>
-              <h1 className="text-[15px] font-black text-white line-clamp-1 leading-none uppercase tracking-tighter" dangerouslySetInnerHTML={{ __html: currentSong.titulo }} />
-              <p className="text-[10px] text-white/50 font-bold truncate">A pedido de: <span className="text-orange-400">{currentSong.usuario}</span></p>
-              
-              {/* THE LINK IN ONE LINE */}
-              <div className="bg-orange-500/10 border border-orange-500/30 px-3 py-1 rounded-full w-fit mt-2 shadow-inner">
-                 <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">live.americolabs.com</span>
-              </div>
+              <h1 className="text-lg sm:text-2xl font-black text-white truncate leading-tight italic uppercase tracking-tighter" dangerouslySetInnerHTML={{ __html: currentSong.titulo }} />
+              <p className="text-white/60 text-[10px] sm:text-sm font-medium">Pedido por: <span className="text-orange-400 font-bold">{currentSong.usuario}</span></p>
             </div>
 
-            {/* Right: MASSIVE Pop-out QR */}
-            <div className="absolute -top-12 -right-3 flex flex-col items-center flex-shrink-0 group">
-              <div className="bg-white p-2 rounded-[28px] shadow-[0_20px_45px_rgba(0,0,0,0.8)] rotate-6 border-4 border-orange-600 group-hover:rotate-0 transition-transform duration-500">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://live.americolabs.com" alt="QR" className="w-[95px] h-[95px] mix-blend-multiply" />
+            {/* Next Song Preview */}
+            {nextSong && (
+              <div className="ml-4 sm:ml-6 pl-4 sm:pl-6 border-l border-white/10 hidden lg:block max-w-[180px]">
+                <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest mb-1">SIGUIENTE</p>
+                <p className="text-[11px] font-bold text-white/80 truncate" dangerouslySetInnerHTML={{ __html: nextSong.titulo }} />
+                <p className="text-[9px] text-white/40 truncate">Por: {nextSong.usuario}</p>
               </div>
-              <div className="mt-2 bg-orange-600 px-3 py-1 rounded-full shadow-lg -rotate-3 mt-4">
-                 <span className="text-[9px] font-black text-white uppercase tracking-widest leading-none">SÁCALE CAPTURA</span>
-              </div>
-            </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
     </div>
   );
 }
-

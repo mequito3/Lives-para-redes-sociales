@@ -1,6 +1,11 @@
 import type { SongRequest } from './db-operations';
 
-const API_BASE = '';
+// For Hostinger, we use api.php directly to avoid Node.js dependency issues.
+// In development (local), we point to the Laragon Apache server because the Node/Vite server cannot execute PHP.
+const isDev = import.meta.env.DEV;
+const API_BASE = isDev 
+  ? 'http://localhost/livejukebox/api.php' 
+  : '/api.php';
 
 export async function fetchPendingRequests(): Promise<SongRequest[]> {
   const response = await fetch(`${API_BASE}/api/songs`);
