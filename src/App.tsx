@@ -811,16 +811,31 @@ function StreamerView() {
   }, [playerReady, currentSong, hasStarted]);
 
   const markingRef = useRef<number | null>(null);
+  const pedidosRef = useRef<SongRequest[]>([]);
+
+  useEffect(() => {
+    pedidosRef.current = pedidos;
+  }, [pedidos]);
 
   const markAsPlayed = async (id: number) => {
     if (!id || markingRef.current === id) return;
     markingRef.current = id;
     
-    // Optimistic update: find next song in current list
-    const currentIndex = pedidos.findIndex(p => p.id === id);
-    if (currentIndex !== -1 && currentIndex < pedidos.length - 1) {
-      setCurrentSong(pedidos[currentIndex + 1]);
-    } else if (pedidos.length <= 1) {
+    // Optimistic update: use fresh array to avoid stale closures in YouTube events
+    const freshPedidos = pedidosRef.current;
+    const currentIndex = freshPedidos.findIndex(p => p.id === id);
+    
+    if (currentIndex !== -1 && currentIndex < freshPedidos.length - 1) {
+      const nextSong = freshPedidos[currentIndex + 1];
+      setCurrentSong(nextSong);
+      
+      // Force play video inside trusted event tick
+      if (playerRef.current && playerRef.current.loadVideoById) {
+        try {
+          playerRef.current.loadVideoById(nextSong.youtube_id);
+        } catch(e) { }
+      }
+    } else if (freshPedidos.length <= 1) {
       setCurrentSong(null);
     }
 
