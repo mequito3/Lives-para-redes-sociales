@@ -174,47 +174,6 @@ function AppContent() {
               <UserView apiKey={apiKey} />
             </main>
             
-            {/* Hidden/Small Config button at bottom */}
-            <div className="fixed bottom-4 right-4 z-50">
-              <button 
-                onClick={() => setShowConfig(!showConfig)}
-                className="p-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-white/10 hover:text-white/40 transition-all"
-                title="Configuración API"
-              >
-                <Settings className="w-4 h-4" />
-              </button>
-            </div>
-
-            {showConfig && (
-              <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="max-w-md w-full p-6 bg-[#1a1a1a] border border-white/10 rounded-[32px] space-y-4"
-                >
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-bold">Configuración API</h3>
-                    <button onClick={() => setShowConfig(false)} className="text-white/40 hover:text-white">✕</button>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-white/40 uppercase block">YouTube API Key</label>
-                    <input 
-                      type="password" 
-                      value={apiKey}
-                      onChange={(e) => setApiKey(e.target.value)}
-                      placeholder="API Key..."
-                      className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 focus:border-orange-500 outline-none"
-                    />
-                  </div>
-                  <button 
-                    onClick={() => setShowConfig(false)}
-                    className="w-full bg-orange-600 hover:bg-orange-500 py-3 rounded-xl font-bold transition-all"
-                  >
-                    Guardar Cambios
-                  </button>
-                </motion.div>
-              </div>
-            )}
           </div>
         } />
 
