@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from "express";
 import { createServer as createHttpServer } from "http";
 import { createServer as createViteServer } from "vite";
@@ -8,7 +9,7 @@ import { getPendingRequests, addSongRequest, updateSongRequest, deleteSongReques
 async function startServer() {
   const app = express();
   const PORT = process.env.PORT || 3000;
-  const isProd = process.env.NODE_ENV === "production";
+  const isProd = true; // Forzado a production para evitar crash en Passenger
   const root = process.cwd();
 
   console.log(`\n--- JUKEBOX SERVER STARTING ---`);
