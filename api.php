@@ -15,11 +15,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     exit();
 }
 
-// Database configuration - Update these with your Hostinger MySQL details
-$db_host = 'localhost';
-$db_user = 'root'; // Update manually on Hostinger
-$db_pass = '';     // Update manually on Hostinger
-$db_name = 'livejukebox';
+// Detección automática de entorno (Local vs Hostinger)
+$is_local = ($_SERVER['REMOTE_ADDR'] == '127.0.0.1' || $_SERVER['REMOTE_ADDR'] == '::1' || strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') !== false);
+
+if ($is_local) {
+    // Configuración para Laragon (Local)
+    $db_host = 'localhost';
+    $db_user = 'root';
+    $db_pass = '';
+    $db_name = 'livejukebox';
+} else {
+    // Configuración para Hostinger (Producción)
+    $db_host = '127.0.0.1';
+    $db_user = 'u636084353_lives';
+    $db_pass = 'livesRedes123';
+    $db_name = 'u636084353_lives';
+}
 
 try {
     $pdo = new PDO("mysql:host=$db_host;dbname=$db_name;charset=utf8", $db_user, $db_pass, [
