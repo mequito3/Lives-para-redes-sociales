@@ -335,29 +335,20 @@ function UserView({ apiKey }: { apiKey: string }) {
     localStorage.setItem('jukebox_user', userName);
   }, [userName]);
 
-  // Initialize Socket.IO connection
+  // Poll streamer status and queue
   useEffect(() => {
-    initializeSocket();
-    requestStatus(); // Request initial status
-    requestSongs(); // Request initial songs
-  }, []);
+    const fetchStatus = async () => {
+      try {
+        const { isLive } = await fetchStreamerStatus();
+        setIsLive(isLive);
+      } catch (error) {
+        console.error('Error fetching status:', error);
+      }
+    };
 
-  // Listen to streamer status via Socket.IO
-  useEffect(() => {
-    onStatusUpdated((status) => {
-      setIsLive(status.isLive);
-    });
-
-    return () => offStatusUpdated();
-  }, []);
-
-  // Listen to queue via Socket.IO
-  useEffect(() => {
-    onSongsUpdated((songs) => {
-      setQueue(songs);
-    });
-
-    return () => offSongsUpdated();
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   // Dynamic search with debounce
@@ -710,7 +701,7 @@ function StreamerView() {
   const [playerReady, setPlayerReady] = useState(false);
   const [hasStarted, setHasStarted] = useState(() => localStorage.getItem('jukebox_started') === 'true');
   const playerRef = useRef<any>(null);
-  const currentSongIdRef = useRef<string | null>(null);
+  const currentSongIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     localStorage.setItem('jukebox_started', String(hasStarted));
@@ -767,23 +758,27 @@ function StreamerView() {
     }
   }, []);
 
-  // Escuchar pedidos via Socket.IO
+  // Escuchar pedidos via Polling HTTP
   useEffect(() => {
-    initializeSocket();
+    const fetchPedidos = async () => {
+      try {
+        const list = await fetchPendingRequests();
+        setPedidos(list);
 
-    onSongsUpdated((list) => {
-      setPedidos(list);
+        const isCurrentStillPending = list.some(s => s.id === currentSongIdRef.current);
 
-      // Check if the current song is still in the pending list
-      const isCurrentStillPending = list.some(s => s.id === currentSongIdRef.current);
-
-      // If no song is playing OR the current song is no longer in the pending list, pick the first one
-      if (list.length > 0 && (!currentSongIdRef.current || !isCurrentStillPending)) {
-        setCurrentSong(list[0]);
+        if (list.length > 0 && (!currentSongIdRef.current || !isCurrentStillPending)) {
+          setCurrentSong(list[0]);
+        }
+      } catch (error) {
+        console.error('Error fetching queue:', error);
       }
-    });
+    };
 
-    return () => offSongsUpdated();
+    fetchPedidos();
+    const interval = setInterval(fetchPedidos, 3000); // Check every 3 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   // Inicializar o actualizar el reproductor
@@ -836,9 +831,9 @@ function StreamerView() {
     }
   }, [playerReady, currentSong, hasStarted]);
 
-  const markingRef = useRef<string | null>(null);
+  const markingRef = useRef<number | null>(null);
 
-  const markAsPlayed = async (id: string) => {
+  const markAsPlayed = async (id: number) => {
     if (!id || markingRef.current === id) return;
     markingRef.current = id;
     
@@ -1018,19 +1013,25 @@ function OverlayView() {
   const [nextSong, setNextSong] = useState<SongRequest | null>(null);
 
   useEffect(() => {
-    initializeSocket();
-
-    onSongsUpdated((list) => {
-      if (list.length > 0) {
-        setCurrentSong(list[0]);
-        setNextSong(list[1] || null);
-      } else {
-        setCurrentSong(null);
-        setNextSong(null);
+    const fetchPedidos = async () => {
+      try {
+        const list = await fetchPendingRequests();
+        if (list.length > 0) {
+          setCurrentSong(list[0]);
+          setNextSong(list[1] || null);
+        } else {
+          setCurrentSong(null);
+          setNextSong(null);
+        }
+      } catch (error) {
+        console.error('Error fetching queue:', error);
       }
-    });
+    };
 
-    return () => offSongsUpdated();
+    fetchPedidos();
+    const interval = setInterval(fetchPedidos, 3000); // Check every 3 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   return (

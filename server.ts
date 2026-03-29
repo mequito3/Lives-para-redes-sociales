@@ -1,6 +1,5 @@
 import express from "express";
 import { createServer as createHttpServer } from "http";
-import { Server as SocketIOServer } from "socket.io";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import fs from "fs";
@@ -124,77 +123,10 @@ async function startServer() {
   }
 
   const httpServer = createHttpServer(app);
-  const io = new SocketIOServer(httpServer, {
-    cors: {
-      origin: "*",
-      methods: ["GET", "POST"]
-    }
-  });
-
-  // Socket.IO Events
-  io.on("connection", (socket) => {
-    console.log(`👤 Client connected: ${socket.id}`);
-
-    socket.on("disconnect", () => {
-      console.log(`👤 Client disconnected: ${socket.id}`);
-    });
-
-    socket.on("request_songs", async () => {
-      try {
-        const songs = await getPendingRequests();
-        socket.emit("songs_updated", songs);
-      } catch (error) {
-        console.error("Error fetching songs:", error);
-      }
-    });
-
-    socket.on("request_status", async () => {
-      try {
-        const status = await getStreamerStatus();
-        socket.emit("status_updated", status);
-      } catch (error) {
-        console.error("Error fetching status:", error);
-      }
-    });
-  });
-
-  // Broadcast songs to all connected clients
-  async function broadcastSongs() {
-    try {
-      const songs = await getPendingRequests();
-      io.emit("songs_updated", songs);
-    } catch (error) {
-      console.error("Error broadcasting songs:", error);
-    }
-  }
-
-  // Broadcast status to all connected clients
-  async function broadcastStatus() {
-    try {
-      const status = await getStreamerStatus();
-      io.emit("status_updated", status);
-    } catch (error) {
-      console.error("Error broadcasting status:", error);
-    }
-  }
-
-  // Override API endpoints to also broadcast via Socket.IO
-  const originalAddSong = app.post("/api/songs", async (req, res) => {
-    try {
-      const songData = req.body;
-      const id = await addSongRequest(songData);
-      await broadcastSongs();
-      res.json({ id });
-    } catch (error) {
-      console.error('Error adding song:', error);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  });
 
   httpServer.listen(PORT, "0.0.0.0", () => {
     console.log(`🚀 Server running at http://localhost:${PORT}`);
     console.log(`   Also accessible at http://127.0.0.1:${PORT}`);
-    console.log(`🔌 WebSocket server active`);
   });
 }
 
