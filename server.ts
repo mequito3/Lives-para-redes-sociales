@@ -8,7 +8,7 @@ import { getPendingRequests, addSongRequest, updateSongRequest, deleteSongReques
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT || 3000;
   const isProd = process.env.NODE_ENV === "production";
   const root = process.cwd();
 
