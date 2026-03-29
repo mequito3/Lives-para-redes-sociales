@@ -1083,74 +1083,67 @@ function OverlayView() {
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-transparent flex justify-center items-center p-4 sm:p-8 overflow-hidden pointer-events-none">
+    <div className="fixed inset-0 bg-transparent flex justify-center items-end p-4 pb-8 overflow-hidden pointer-events-none">
       <AnimatePresence mode="wait">
         {!currentSong ? (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex flex-col items-center gap-3 bg-black/80 backdrop-blur-xl border-2 border-orange-500/20 px-6 py-4 rounded-3xl w-[260px] text-center"
+            initial={{ y: 50, opacity: 0, scale: 0.95 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: 50, opacity: 0, scale: 0.95 }}
+            className="flex items-center gap-4 bg-black/85 backdrop-blur-xl border border-orange-500/30 p-2.5 pr-6 rounded-full shadow-[0_0_30px_rgba(234,88,12,0.15)] w-[300px]"
           >
-            <div className="bg-white p-1 rounded-xl mb-1 shadow-[0_0_20px_rgba(234,88,12,0.3)]">
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://live.americolabs.com" alt="QR" className="w-[80px] h-[80px]" />
+            <div className="bg-white p-1 rounded-full shadow-lg flex-shrink-0">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://live.americolabs.com" alt="QR" className="w-[45px] h-[45px] rounded-full mix-blend-multiply" />
             </div>
-            <div className="text-[10px] font-black text-orange-500 uppercase tracking-widest bg-orange-500/10 px-3 py-1 rounded-full">
-              ROCKOLA ACTIVA
+            <div className="flex flex-col flex-1">
+              <div className="text-[10px] font-black text-orange-500 uppercase tracking-[0.2em] mb-0.5 flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse" />
+                ROCKOLA EN VIVO
+              </div>
+              <span className="text-[11px] font-bold text-white/80 leading-tight">Manda tu canción aquí</span>
             </div>
-            <span className="text-xs uppercase font-bold text-white/60">Escanea para pedir tu canción</span>
           </motion.div>
         ) : (
           <motion.div 
-            initial={{ y: 50, opacity: 0, scale: 0.9 }}
+            initial={{ y: 50, opacity: 0, scale: 0.95 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 50, opacity: 0, scale: 0.9 }}
+            exit={{ y: 50, opacity: 0, scale: 0.95 }}
             key={currentSong.id}
-            className="flex flex-col gap-4 bg-gradient-to-b from-black/95 to-zinc-950/95 backdrop-blur-2xl border-2 border-orange-500/40 p-5 rounded-[32px] shadow-[0_0_40px_rgba(234,88,12,0.25)] w-[280px]"
+            className="flex flex-row items-center gap-3 bg-gradient-to-r from-black/95 to-zinc-900/95 backdrop-blur-2xl border border-orange-500/30 p-2.5 rounded-3xl shadow-[0_0_40px_rgba(234,88,12,0.2)] w-full max-w-[340px]"
           >
-            {/* TOP: Thumbnail + Sounding now */}
-            <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-lg border border-white/10">
+            {/* Left: Thumbnail & Audio Bars */}
+            <div className="relative w-[68px] h-[68px] flex-shrink-0 rounded-[18px] overflow-hidden shadow-lg border border-white/10">
               <img src={currentSong.miniatura} alt="" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-              
-              <div className="absolute top-2 left-2 bg-orange-600 px-2 py-1 rounded-md shadow-lg">
-                 <span className="text-[9px] font-black text-white uppercase tracking-tighter">SONANDO AHORA</span>
-              </div>
+              <div className="absolute inset-0 bg-black/40" />
               
               {/* Animated Audio Bars */}
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-end gap-1 h-5">
-                {[1, 2, 3, 4, 5].map((i) => (
+              <div className="absolute bottom-1.5 w-full flex justify-center items-end gap-0.5 h-3">
+                {[1, 2, 3, 4].map((i) => (
                   <motion.div
                     key={i}
-                    animate={{ height: [4, 16, 6, 20, 8] }}
+                    animate={{ height: [3, 10, 4, 12, 5] }}
                     transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.1 }}
-                    className="w-1.5 bg-orange-500 rounded-full"
+                    className="w-[3px] bg-orange-500 rounded-full"
                   />
                 ))}
               </div>
             </div>
 
-            {/* MIDDLE: Song Info */}
-            <div className="flex flex-col text-center space-y-2">
-              <h1 className="text-base font-black text-white line-clamp-2 leading-tight uppercase tracking-tighter" dangerouslySetInnerHTML={{ __html: currentSong.titulo }} />
-              <div className="inline-block bg-orange-500/10 border border-orange-500/20 px-3 py-1 rounded-full mx-auto">
-                <p className="text-white/80 text-[11px] font-medium">
-                  Pedido por: <span className="text-orange-400 font-bold ml-1">{currentSong.usuario}</span>
-                </p>
+            {/* Middle: Text Info */}
+            <div className="flex-1 min-w-0 pr-3 border-r border-white/5 space-y-0.5">
+              <div className="inline-block bg-orange-600 px-1.5 py-0.5 rounded-md mb-0.5">
+                 <span className="text-[7.5px] font-black text-white uppercase tracking-wider">SONANDO AHORA</span>
               </div>
+              <h1 className="text-[13px] font-black text-white line-clamp-2 leading-[1.1] uppercase tracking-tight" dangerouslySetInnerHTML={{ __html: currentSong.titulo }} />
+              <p className="text-[9px] text-white/60 font-bold truncate">Por: <span className="text-orange-400">{currentSong.usuario}</span></p>
             </div>
 
-            {/* BOTTOM: QR Code + CTA */}
-            <div className="mt-2 pt-4 border-t border-white/10 flex items-center justify-between gap-4">
-              <div className="bg-white p-1 rounded-xl shadow-[0_0_15px_rgba(234,88,12,0.3)]">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://live.americolabs.com" alt="QR" className="w-[60px] h-[60px]" />
+            {/* Right: QR Code */}
+            <div className="flex flex-col items-center justify-center flex-shrink-0 w-[55px] pr-1">
+              <div className="bg-white p-0.5 rounded-xl shadow-md">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://live.americolabs.com" alt="QR" className="w-[42px] h-[42px] mix-blend-multiply" />
               </div>
-              <div className="flex flex-col text-right flex-1">
-                <span className="text-[10px] uppercase tracking-widest text-orange-500 font-black mb-1">¡PIDE LA TUYA!</span>
-                <span className="text-[11px] font-bold text-white leading-none">live.americolabs</span>
-                <span className="text-[11px] font-bold text-white mb-1">.com</span>
-                <span className="text-[8px] text-white/50 font-medium uppercase mt-0.5">Apunta con tu cámara</span>
-              </div>
+              <span className="text-[6.5px] font-black text-white/50 uppercase mt-1.5 tracking-widest text-center leading-none">PIDE LA<br/>TUYA</span>
             </div>
           </motion.div>
         )}
