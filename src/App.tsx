@@ -24,7 +24,8 @@ import {
   AlertCircle,
   ChevronRight,
   ThumbsUp,
-  ExternalLink
+  ExternalLink,
+  Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { fetchPendingRequests, createSongRequest, updateSongRequestAPI, deleteSongRequestAPI, fetchStreamerStatus, updateStreamerStatusAPI } from './api-client';
@@ -661,6 +662,23 @@ function UserView({ apiKey }: { apiKey: string }) {
           )}
         </div>
       </div>
+
+      {/* Próximamente Teaser */}
+      <div className="mt-16 flex justify-center pb-4">
+        <div className="inline-flex flex-col items-center gap-3 px-8 py-6 bg-gradient-to-t from-orange-500/10 to-transparent border border-orange-500/20 rounded-3xl cursor-default transition-all duration-500 hover:border-orange-500/40 group">
+          <div className="bg-orange-500/20 p-2 rounded-full group-hover:bg-orange-500/30 transition-colors">
+            <Sparkles className="w-5 h-5 text-orange-400" />
+          </div>
+          <div className="text-center space-y-1">
+            <span className="block text-sm font-black tracking-widest uppercase text-orange-500/80 group-hover:text-orange-400 transition-colors">
+              Nuevas Funcionalidades Muy Pronto
+            </span>
+            <span className="block text-xs text-white/30 font-medium max-w-xs mx-auto">
+              Estamos trabajando en sorpresas y opciones especiales para interactuar mejor con la Jukebox.
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1034,11 +1052,18 @@ function OverlayView() {
         {!currentSong ? (
           <motion.div
             initial={{ opacity: 0 }}
-            animate={{ opacity: 0.5 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="text-[9px] sm:text-[10px] font-black text-white/20 uppercase tracking-[0.3em] ml-2 sm:ml-4 mb-2 sm:mb-4"
+            className="flex flex-col gap-2 ml-2 sm:ml-4 mb-2 sm:mb-4"
           >
-            Overlay Activo • Esperando Petición
+            <div className="text-[9px] sm:text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">
+              Overlay Activo • Esperando Petición
+            </div>
+            <div className="inline-flex items-center gap-3 bg-black/60 backdrop-blur-md px-4 py-2 border border-white/10 rounded-xl w-fit">
+              <div className="bg-orange-600 w-2 h-2 rounded-full animate-pulse"></div>
+              <span className="text-xs uppercase tracking-widest text-white/60 font-bold">Pide tu canción en:</span>
+              <span className="text-sm font-black text-white">live.americolabs.com</span>
+            </div>
           </motion.div>
         ) : (
           <motion.div 
@@ -1046,7 +1071,7 @@ function OverlayView() {
             animate={{ x: 0, opacity: 1, scale: 1 }}
             exit={{ x: 100, opacity: 0, scale: 0.8 }}
             key={currentSong.id}
-            className="flex items-center gap-4 sm:gap-6 bg-black/95 backdrop-blur-xl border border-orange-500/20 p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] shadow-2xl shadow-orange-600/10 w-full sm:max-w-2xl"
+            className="flex items-center gap-4 sm:gap-6 bg-black/95 backdrop-blur-xl border border-orange-500/20 p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] shadow-2xl shadow-orange-600/10 w-full sm:max-w-max"
           >
             {/* Album Art / Thumbnail */}
             <div className="relative w-16 h-16 sm:w-24 sm:h-24 rounded-xl sm:rounded-2xl overflow-hidden flex-shrink-0 shadow-lg border-2 border-orange-500/30">
@@ -1067,7 +1092,7 @@ function OverlayView() {
             </div>
 
             {/* Song Info */}
-            <div className="flex-1 min-w-0 space-y-0.5 sm:space-y-1">
+            <div className="flex-1 min-w-[200px] space-y-0.5 sm:space-y-1">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="px-1.5 py-0.5 bg-orange-600 text-[8px] sm:text-[10px] font-black rounded-full uppercase tracking-tighter text-white">SONANDO AHORA</span>
                 {currentSong.votos && currentSong.votos > 0 && (
@@ -1077,18 +1102,30 @@ function OverlayView() {
                   </div>
                 )}
               </div>
-              <h1 className="text-lg sm:text-2xl font-black text-white truncate leading-tight italic uppercase tracking-tighter" dangerouslySetInnerHTML={{ __html: currentSong.titulo }} />
+              <h1 className="text-lg sm:text-2xl font-black text-white truncate leading-tight italic uppercase tracking-tighter max-w-[300px]" dangerouslySetInnerHTML={{ __html: currentSong.titulo }} />
               <p className="text-white/60 text-[10px] sm:text-sm font-medium">Pedido por: <span className="text-orange-400 font-bold">{currentSong.usuario}</span></p>
             </div>
 
-            {/* Next Song Preview */}
-            {nextSong && (
-              <div className="ml-4 sm:ml-6 pl-4 sm:pl-6 border-l border-white/10 hidden lg:block max-w-[180px]">
-                <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest mb-1">SIGUIENTE</p>
-                <p className="text-[11px] font-bold text-white/80 truncate" dangerouslySetInnerHTML={{ __html: nextSong.titulo }} />
-                <p className="text-[9px] text-white/40 truncate">Por: {nextSong.usuario}</p>
-              </div>
-            )}
+            {/* Next Song / CTA */}
+            <div className="ml-2 sm:ml-4 pl-4 sm:pl-6 border-l border-white/10 hidden md:flex flex-col justify-center min-w-[120px]">
+              {nextSong ? (
+                <>
+                  <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest mb-1">SIGUIENTE</p>
+                  <p className="text-[11px] font-bold text-white/80 line-clamp-2 leading-tight" dangerouslySetInnerHTML={{ __html: nextSong.titulo }} />
+                </>
+              ) : (
+                <>
+                  <p className="text-[9px] font-bold text-orange-500 uppercase tracking-widest mb-0.5">LA PISTA ESTÁ LIBRE</p>
+                  <p className="text-[11px] font-bold text-white/60">Sé el siguiente en pedir.</p>
+                </>
+              )}
+            </div>
+
+            {/* URL Display */}
+            <div className="ml-2 pl-4 sm:pl-6 border-l border-orange-500/20 hidden lg:flex flex-col justify-center text-center">
+              <span className="text-[8px] uppercase tracking-[0.2em] text-orange-500 font-black mb-1.5">PIDE AQUÍ</span>
+              <span className="text-xs font-black text-white px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg">live.americolabs.com</span>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
