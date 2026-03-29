@@ -1061,7 +1061,6 @@ function StreamerView() {
 
 function OverlayView() {
   const [currentSong, setCurrentSong] = useState<SongRequest | null>(null);
-  const [nextSong, setNextSong] = useState<SongRequest | null>(null);
 
   useEffect(() => {
     const fetchPedidos = async () => {
@@ -1069,10 +1068,8 @@ function OverlayView() {
         const list = await fetchPendingRequests();
         if (list.length > 0) {
           setCurrentSong(list[0]);
-          setNextSong(list[1] || null);
         } else {
           setCurrentSong(null);
-          setNextSong(null);
         }
       } catch (error) {
         console.error('Error fetching queue:', error);
@@ -1086,84 +1083,74 @@ function OverlayView() {
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-transparent flex items-end p-4 sm:p-8 overflow-hidden pointer-events-none">
+    <div className="fixed inset-0 bg-transparent flex justify-center items-center p-4 sm:p-8 overflow-hidden pointer-events-none">
       <AnimatePresence mode="wait">
         {!currentSong ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex flex-col gap-2 ml-2 sm:ml-4 mb-2 sm:mb-4"
+            className="flex flex-col items-center gap-3 bg-black/80 backdrop-blur-xl border-2 border-orange-500/20 px-6 py-4 rounded-3xl w-[260px] text-center"
           >
-            <div className="text-[9px] sm:text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">
-              Overlay Activo • Esperando Petición
+            <div className="bg-white p-1 rounded-xl mb-1 shadow-[0_0_20px_rgba(234,88,12,0.3)]">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://live.americolabs.com" alt="QR" className="w-[80px] h-[80px]" />
             </div>
-            <div className="inline-flex items-center gap-3 bg-black/60 backdrop-blur-md px-4 py-2 border border-white/10 rounded-xl w-fit">
-              <div className="bg-orange-600 w-2 h-2 rounded-full animate-pulse"></div>
-              <span className="text-xs uppercase tracking-widest text-white/60 font-bold">Pide tu canción en:</span>
-              <span className="text-sm font-black text-white">live.americolabs.com</span>
+            <div className="text-[10px] font-black text-orange-500 uppercase tracking-widest bg-orange-500/10 px-3 py-1 rounded-full">
+              ROCKOLA ACTIVA
             </div>
+            <span className="text-xs uppercase font-bold text-white/60">Escanea para pedir tu canción</span>
           </motion.div>
         ) : (
           <motion.div 
-            initial={{ x: -100, opacity: 0, scale: 0.8 }}
-            animate={{ x: 0, opacity: 1, scale: 1 }}
-            exit={{ x: 100, opacity: 0, scale: 0.8 }}
+            initial={{ y: 50, opacity: 0, scale: 0.9 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: 50, opacity: 0, scale: 0.9 }}
             key={currentSong.id}
-            className="flex items-center gap-4 sm:gap-6 bg-black/95 backdrop-blur-xl border border-orange-500/20 p-4 sm:p-6 rounded-[24px] sm:rounded-[32px] shadow-2xl shadow-orange-600/10 w-full sm:max-w-max"
+            className="flex flex-col gap-4 bg-gradient-to-b from-black/95 to-zinc-950/95 backdrop-blur-2xl border-2 border-orange-500/40 p-5 rounded-[32px] shadow-[0_0_40px_rgba(234,88,12,0.25)] w-[280px]"
           >
-            {/* Album Art / Thumbnail */}
-            <div className="relative w-16 h-16 sm:w-24 sm:h-24 rounded-xl sm:rounded-2xl overflow-hidden flex-shrink-0 shadow-lg border-2 border-orange-500/30">
+            {/* TOP: Thumbnail + Sounding now */}
+            <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-lg border border-white/10">
               <img src={currentSong.miniatura} alt="" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+              
+              <div className="absolute top-2 left-2 bg-orange-600 px-2 py-1 rounded-md shadow-lg">
+                 <span className="text-[9px] font-black text-white uppercase tracking-tighter">SONANDO AHORA</span>
+              </div>
               
               {/* Animated Audio Bars */}
-              <div className="absolute bottom-1 sm:bottom-2 left-1/2 -translate-x-1/2 flex items-end gap-0.5 h-3 sm:h-4">
-                {[1, 2, 3, 4].map((i) => (
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-end gap-1 h-5">
+                {[1, 2, 3, 4, 5].map((i) => (
                   <motion.div
                     key={i}
-                    animate={{ height: [3, 10, 5, 14, 7] }}
+                    animate={{ height: [4, 16, 6, 20, 8] }}
                     transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.1 }}
-                    className="w-0.5 sm:w-1 bg-orange-500 rounded-full"
+                    className="w-1.5 bg-orange-500 rounded-full"
                   />
                 ))}
               </div>
             </div>
 
-            {/* Song Info */}
-            <div className="flex-1 min-w-[200px] space-y-0.5 sm:space-y-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="px-1.5 py-0.5 bg-orange-600 text-[8px] sm:text-[10px] font-black rounded-full uppercase tracking-tighter text-white">SONANDO AHORA</span>
-                {currentSong.votos && currentSong.votos > 0 && (
-                  <div className="flex items-center gap-1 text-orange-500 text-[8px] sm:text-[10px] font-bold bg-orange-500/10 px-1.5 py-0.5 rounded-full">
-                    <ThumbsUp className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                    {currentSong.votos} VOTOS
-                  </div>
-                )}
+            {/* MIDDLE: Song Info */}
+            <div className="flex flex-col text-center space-y-2">
+              <h1 className="text-base font-black text-white line-clamp-2 leading-tight uppercase tracking-tighter" dangerouslySetInnerHTML={{ __html: currentSong.titulo }} />
+              <div className="inline-block bg-orange-500/10 border border-orange-500/20 px-3 py-1 rounded-full mx-auto">
+                <p className="text-white/80 text-[11px] font-medium">
+                  Pedido por: <span className="text-orange-400 font-bold ml-1">{currentSong.usuario}</span>
+                </p>
               </div>
-              <h1 className="text-lg sm:text-2xl font-black text-white truncate leading-tight italic uppercase tracking-tighter max-w-[300px]" dangerouslySetInnerHTML={{ __html: currentSong.titulo }} />
-              <p className="text-white/60 text-[10px] sm:text-sm font-medium">Pedido por: <span className="text-orange-400 font-bold">{currentSong.usuario}</span></p>
             </div>
 
-            {/* Next Song / CTA */}
-            <div className="ml-2 sm:ml-4 pl-4 sm:pl-6 border-l border-white/10 hidden md:flex flex-col justify-center min-w-[120px]">
-              {nextSong ? (
-                <>
-                  <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest mb-1">SIGUIENTE</p>
-                  <p className="text-[11px] font-bold text-white/80 line-clamp-2 leading-tight" dangerouslySetInnerHTML={{ __html: nextSong.titulo }} />
-                </>
-              ) : (
-                <>
-                  <p className="text-[9px] font-bold text-orange-500 uppercase tracking-widest mb-0.5">LA PISTA ESTÁ LIBRE</p>
-                  <p className="text-[11px] font-bold text-white/60">Sé el siguiente en pedir.</p>
-                </>
-              )}
-            </div>
-
-            {/* URL Display */}
-            <div className="ml-2 pl-4 sm:pl-6 border-l border-orange-500/20 hidden lg:flex flex-col justify-center text-center">
-              <span className="text-[8px] uppercase tracking-[0.2em] text-orange-500 font-black mb-1.5">PIDE AQUÍ</span>
-              <span className="text-xs font-black text-white px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg">live.americolabs.com</span>
+            {/* BOTTOM: QR Code + CTA */}
+            <div className="mt-2 pt-4 border-t border-white/10 flex items-center justify-between gap-4">
+              <div className="bg-white p-1 rounded-xl shadow-[0_0_15px_rgba(234,88,12,0.3)]">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://live.americolabs.com" alt="QR" className="w-[60px] h-[60px]" />
+              </div>
+              <div className="flex flex-col text-right flex-1">
+                <span className="text-[10px] uppercase tracking-widest text-orange-500 font-black mb-1">¡PIDE LA TUYA!</span>
+                <span className="text-[11px] font-bold text-white leading-none">live.americolabs</span>
+                <span className="text-[11px] font-bold text-white mb-1">.com</span>
+                <span className="text-[8px] text-white/50 font-medium uppercase mt-0.5">Apunta con tu cámara</span>
+              </div>
             </div>
           </motion.div>
         )}
@@ -1171,3 +1158,4 @@ function OverlayView() {
     </div>
   );
 }
+
