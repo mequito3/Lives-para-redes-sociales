@@ -46,15 +46,16 @@ interface SongRequest {
   votosUsuarios?: string[]; // Para evitar votos duplicados por sesión
 }
 
-interface YouTubeResult {
-  id: { 
-    kind: string;
-    videoId?: string;
+export interface YouTubeResult {
+  id: {
+    videoId: string;
   };
   snippet: {
     title: string;
     thumbnails: {
-      medium: { url: string };
+      default?: { url: string };
+      medium?: { url: string };
+      high?: { url: string };
     };
   };
 }
@@ -426,6 +427,7 @@ function UserView({ apiKey }: { apiKey: string }) {
   };
 
   const handleRequest = async (video: YouTubeResult) => {
+    console.log("CACHE_BUSTER_NEW_UI");
     const videoId = video.id?.videoId;
 
     if (!videoId) {
