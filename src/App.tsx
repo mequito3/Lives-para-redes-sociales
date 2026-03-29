@@ -174,6 +174,26 @@ function AppContent() {
               <UserView apiKey={apiKey} />
             </main>
             
+            {/* Footer Americo Labs */}
+            <footer className="max-w-6xl mx-auto px-4 pb-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-6 border-t border-white/5">
+              <p className="text-sm font-medium text-white/40">
+                © {new Date().getFullYear()} Americo Labs. Todos los derechos reservados.
+              </p>
+              <a 
+                href="https://portafolio.americolabs.com/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="group flex items-center gap-2.5 px-5 py-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-full transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(16,185,129,0.15)]"
+              >
+                <span className="text-[10px] font-bold tracking-widest uppercase text-emerald-500/80">
+                  DISEÑADO POR
+                </span>
+                <span className="text-sm font-extrabold text-emerald-400">
+                  Americo Labs
+                </span>
+                <ExternalLink className="w-3.5 h-3.5 text-emerald-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              </a>
+            </footer>
           </div>
         } />
 
