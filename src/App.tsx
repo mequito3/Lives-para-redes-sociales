@@ -142,15 +142,13 @@ export default function App() {
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('jukebox_api_key') || import.meta.env.VITE_YOUTUBE_API_KEY || '');
+  const [apiKey, setApiKey] = useState(() => import.meta.env.VITE_YOUTUBE_API_KEY || '');
   const [showConfig, setShowConfig] = useState(false);
   const [streamerPass, setStreamerPass] = useState('');
   const [isStreamerAuth, setIsStreamerAuth] = useState(false);
   const [passError, setPassError] = useState(false);
 
-  useEffect(() => {
-    localStorage.setItem('jukebox_api_key', apiKey);
-  }, [apiKey]);
+  // Removed persistent setting of apiKey since settings gear was removed
 
   const handleStreamerLogin = (e: React.FormEvent) => {
     e.preventDefault();
