@@ -1109,7 +1109,7 @@ function OverlayView() {
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 50, opacity: 0, scale: 0.95 }}
             key={currentSong.id}
-            className="flex flex-row items-center gap-3 bg-gradient-to-r from-black/95 to-zinc-900/95 backdrop-blur-2xl border border-orange-500/30 p-2.5 rounded-3xl shadow-[0_0_40px_rgba(234,88,12,0.2)] w-full max-w-[340px]"
+            className="flex flex-row items-center gap-3 bg-gradient-to-r from-black/95 to-zinc-900/95 backdrop-blur-2xl border border-orange-500/30 p-2.5 rounded-3xl shadow-[0_0_40px_rgba(234,88,12,0.2)] w-full max-w-[380px]"
           >
             {/* Left: Thumbnail & Audio Bars */}
             <div className="relative w-[68px] h-[68px] flex-shrink-0 rounded-[18px] overflow-hidden shadow-lg border border-white/10">
@@ -1130,20 +1130,25 @@ function OverlayView() {
             </div>
 
             {/* Middle: Text Info */}
-            <div className="flex-1 min-w-0 pr-3 border-r border-white/5 space-y-0.5">
-              <div className="inline-block bg-orange-600 px-1.5 py-0.5 rounded-md mb-0.5">
+            <div className="flex-1 min-w-0 pr-2 border-r border-white/10 space-y-0.5">
+              <div className="inline-block bg-orange-600 px-1.5 py-0.5 rounded-md mb-0.5 flex w-fit items-center gap-1">
+                 <div className="w-1 h-1 bg-white rounded-full animate-pulse" />
                  <span className="text-[7.5px] font-black text-white uppercase tracking-wider">SONANDO AHORA</span>
               </div>
-              <h1 className="text-[13px] font-black text-white line-clamp-2 leading-[1.1] uppercase tracking-tight" dangerouslySetInnerHTML={{ __html: currentSong.titulo }} />
-              <p className="text-[9px] text-white/60 font-bold truncate">Por: <span className="text-orange-400">{currentSong.usuario}</span></p>
+              <h1 className="text-[13px] font-black text-white line-clamp-1 leading-tight uppercase tracking-tight" dangerouslySetInnerHTML={{ __html: currentSong.titulo }} />
+              <p className="text-[9px] text-white/60 font-bold truncate mb-1">Por: <span className="text-orange-400">{currentSong.usuario}</span></p>
+              
+              <div className="inline-block bg-white/5 border border-white/10 px-2 py-[2px] rounded-full mt-1">
+                 <span className="text-[8.5px] font-black text-white uppercase tracking-widest">live.americolabs.com</span>
+              </div>
             </div>
 
             {/* Right: QR Code */}
-            <div className="flex flex-col items-center justify-center flex-shrink-0 w-[55px] pr-1">
-              <div className="bg-white p-0.5 rounded-xl shadow-md">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://live.americolabs.com" alt="QR" className="w-[42px] h-[42px] mix-blend-multiply" />
+            <div className="flex flex-col items-center justify-center flex-shrink-0 w-[65px] pr-1">
+              <div className="bg-white p-0.5 rounded-xl shadow-md mb-1">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://live.americolabs.com" alt="QR" className="w-[45px] h-[45px] mix-blend-multiply" />
               </div>
-              <span className="text-[6.5px] font-black text-white/50 uppercase mt-1.5 tracking-widest text-center leading-none">PIDE LA<br/>TUYA</span>
+              <span className="text-[6.5px] font-black text-orange-500 uppercase tracking-wider text-center leading-none">SÁCALE<br/>CAPTURA</span>
             </div>
           </motion.div>
         )}
