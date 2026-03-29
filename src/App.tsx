@@ -365,7 +365,7 @@ function UserView({ apiKey }: { apiKey: string }) {
     if (e) e.preventDefault();
     
     if (!apiKey) {
-      setMessage({ text: "⚠️ Falta la API Key de YouTube. Configúrala en el icono de engranaje.", type: 'error' });
+      setMessage({ text: "⚠️ Falta la API Key de YouTube. Configúrala en el archivo .env", type: 'error' });
       return;
     }
 
@@ -374,38 +374,52 @@ function UserView({ apiKey }: { apiKey: string }) {
     }
 
     setLoading(true);
-    // Don't clear results immediately to avoid flickering during dynamic search
-    // setResults([]); 
 
-    try {
-      const musicFilter = '&videoCategoryId=10';
-      const res = await fetch(
-        `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(queryStr)}&maxResults=6&type=video${musicFilter}&key=${apiKey}`
-      );
-      
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error?.message || "Error desconocido de YouTube");
-      }
+    const keys = apiKey.split(',').map(k => k.trim()).filter(Boolean);
+    let success = false;
+    let lastError = null;
 
-      const data = await res.json();
-      
-      if (!data.items || data.items.length === 0) {
-        setMessage({ text: "No se encontraron resultados para esa búsqueda.", type: 'error' });
-      } else {
-        // Filter to ensure we only have videos with IDs
-        const filteredResults = data.items.filter((item: any) => item.id && item.id.videoId);
-        if (filteredResults.length === 0) {
-          setMessage({ text: "No se encontraron videos válidos.", type: 'error' });
+    for (const key of keys) {
+      try {
+        const musicFilter = '&videoCategoryId=10';
+        const res = await fetch(
+          `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(queryStr)}&maxResults=6&type=video${musicFilter}&key=${key}`
+        );
+        
+        if (!res.ok) {
+          const errorData = await res.json();
+          // If quota exceeded or another API Key error, throw to catch and retry next key
+          throw new Error(errorData.error?.message || "Error desconocido de YouTube");
         }
-        setResults(filteredResults);
+
+        const data = await res.json();
+        
+        if (!data.items || data.items.length === 0) {
+          setMessage({ text: "No se encontraron resultados para esa búsqueda.", type: 'error' });
+        } else {
+          const filteredResults = data.items.filter((item: any) => item.id && item.id.videoId);
+          if (filteredResults.length === 0) {
+            setMessage({ text: "No se encontraron videos válidos.", type: 'error' });
+          }
+          setResults(filteredResults);
+        }
+        
+        // Success! We don't need to try the next key
+        success = true;
+        break; 
+        
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`Límite alcanzado o error en la llave ${key.substring(0, 5)}... probando otra si existe.`);
       }
-    } catch (err: any) {
-      console.error(err);
-      setMessage({ text: "❌ Error: " + err.message, type: 'error' });
-    } finally {
-      setLoading(false);
     }
+
+    if (!success && lastError) {
+      console.error(lastError);
+      setMessage({ text: "❌ Error: " + (lastError as Error).message, type: 'error' });
+    }
+
+    setLoading(false);
   };
 
   const handleRequest = async (video: YouTubeResult) => {
@@ -422,22 +436,42 @@ function UserView({ apiKey }: { apiKey: string }) {
     }
 
     setRequesting(videoId);
-    try {
-      // Obtener duración del video
-      const durRes = await fetch(
-        `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoId}&key=${apiKey}`
-      );
-      const durData = await durRes.json();
-      const durationStr = durData.items?.[0]?.contentDetails?.duration || 'PT4M';
-      const durationSec = parseYouTubeDuration(durationStr);
+    
+    // Obtener duración del video probando cada llave disponible
+    const keys = apiKey.split(',').map(k => k.trim()).filter(Boolean);
+    let durationParsed = null;
+    let fallbackError = null;
 
+    for (const key of keys) {
+      try {
+        const durRes = await fetch(
+          `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoId}&key=${key}`
+        );
+        
+        if (!durRes.ok) {
+           throw new Error("DurRes Error");
+        }
+        
+        const durData = await durRes.json();
+        
+        if (durData.items && durData.items.length > 0) {
+          durationParsed = durData.items[0].contentDetails.duration;
+          break; // Funciona, salimos del loop
+        }
+      } catch (e: any) {
+        fallbackError = e;
+      }
+    }
+
+    try {
+      // Create request in backend con la duracion encontrada
       await createSongRequest({
         usuario: userName,
         youtube_id: videoId,
         titulo: video.snippet.title,
-        miniatura: video.snippet.thumbnails.medium.url,
+        miniatura: video.snippet.thumbnails.high?.url || video.snippet.thumbnails.default?.url || '',
+        duracion: durationParsed ? parseYouTubeDuration(durationParsed) : 240,
         reproducida: false,
-        duracion: durationSec,
         votos: 0,
         votosUsuarios: []
       });
