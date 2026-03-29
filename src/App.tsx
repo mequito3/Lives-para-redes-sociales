@@ -414,7 +414,12 @@ function UserView({ apiKey }: { apiKey: string }) {
 
     if (!success && lastError) {
       console.error(lastError);
-      setMessage({ text: "❌ Error: " + (lastError as Error).message, type: 'error' });
+      const errorMsg = (lastError as Error).message.toLowerCase();
+      if (errorMsg.includes('quota') || errorMsg.includes('exceeded')) {
+        setMessage({ text: "❌ La Rockola está descansando: Hemos llegado al límite diario de canciones permitidas por YouTube. ¡Vuelve mañana o añade más magia!", type: 'error' });
+      } else {
+        setMessage({ text: "❌ Ocurrió un problema en la búsqueda: " + (lastError as Error).message, type: 'error' });
+      }
     }
 
     setLoading(false);
