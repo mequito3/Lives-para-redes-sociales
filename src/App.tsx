@@ -416,8 +416,8 @@ function UserView({ apiKey }: { apiKey: string }) {
     if (!success && lastError) {
       console.error(lastError);
       const errorMsg = (lastError as Error).message.toLowerCase();
-      if (errorMsg.includes('quota') || errorMsg.includes('exceeded')) {
-        setMessage({ text: "❌ La Rockola está descansando: Hemos llegado al límite diario de canciones permitidas por YouTube. ¡Vuelve mañana o añade más magia!", type: 'error' });
+      if (errorMsg.includes('quota') || errorMsg.includes('exceeded') || errorMsg.includes('key') || errorMsg.includes('403')) {
+        setMessage({ text: "❌ La Rockola está descansando: Las llaves llegaron a su límite o no están habilitadas. ¡Añade más magia en la consola de Google!", type: 'error' });
       } else {
         setMessage({ text: "❌ Ocurrió un problema en la búsqueda: " + (lastError as Error).message, type: 'error' });
       }
