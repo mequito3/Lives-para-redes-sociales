@@ -1083,77 +1083,77 @@ function OverlayView() {
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-transparent flex justify-center items-end p-4 pb-8 overflow-hidden pointer-events-none">
+    <div className="fixed inset-0 bg-transparent flex justify-center items-end p-4 pb-12 overflow-hidden pointer-events-none">
       <AnimatePresence mode="wait">
         {!currentSong ? (
           <motion.div
-            initial={{ y: 50, opacity: 0, scale: 0.95 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 50, opacity: 0, scale: 0.95 }}
-            className="relative flex items-center gap-4 bg-black/85 backdrop-blur-xl border border-orange-500/30 p-2.5 pr-6 rounded-full shadow-[0_0_30px_rgba(234,88,12,0.15)] w-[300px] mt-8 pl-16"
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 50, opacity: 0 }}
+            className="relative flex items-center gap-6 bg-black/90 backdrop-blur-2xl border-2 border-orange-500/30 p-4 pr-10 rounded-full shadow-[0_0_50px_rgba(234,88,12,0.3)] w-auto min-w-[340px] pl-24"
           >
-            {/* Pop-out QR Code Sticker */}
-            <div className="absolute -top-6 -left-2 bg-white p-1.5 rounded-2xl shadow-[0_10px_25px_rgba(0,0,0,0.5)] -rotate-3 border-2 border-orange-500">
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://live.americolabs.com" alt="QR" className="w-[56px] h-[56px] mix-blend-multiply" />
+            {/* Massive Pop-out QR */}
+            <div className="absolute -top-10 -left-4 bg-white p-2 rounded-3xl shadow-[0_15px_35px_rgba(0,0,0,0.6)] -rotate-6 border-4 border-orange-500">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://live.americolabs.com" alt="QR" className="w-[85px] h-[85px] mix-blend-multiply" />
             </div>
             
-            <div className="flex flex-col flex-1 pl-2">
-              <div className="text-[10px] font-black text-orange-500 uppercase tracking-[0.2em] mb-0.5 flex items-center gap-2">
-                <div className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse" />
-                ROCKOLA EN VIVO
+            <div className="flex flex-col">
+              <div className="text-[12px] font-black text-orange-500 uppercase tracking-[0.3em] mb-1 flex items-center gap-2">
+                <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
+                ROCKOLA TOTAL
               </div>
-              <span className="text-[11px] font-bold text-white/80 leading-tight">Manda tu canción aquí</span>
+              <span className="text-[14px] font-black text-white leading-tight uppercase">Mándame tu música aquí</span>
             </div>
           </motion.div>
         ) : (
           <motion.div 
-            initial={{ y: 50, opacity: 0, scale: 0.95 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 50, opacity: 0, scale: 0.95 }}
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
             key={currentSong.id}
-            className="relative flex flex-row items-center gap-3 bg-gradient-to-r from-black/95 to-zinc-900/95 backdrop-blur-2xl border border-orange-500/30 p-2.5 rounded-3xl shadow-[0_0_40px_rgba(234,88,12,0.2)] w-full max-w-[380px] mt-8"
+            className="relative flex flex-row items-center gap-4 bg-gradient-to-r from-black via-zinc-950 to-black/95 backdrop-blur-3xl border-2 border-orange-500/40 p-3 rounded-[35px] shadow-[0_0_60px_rgba(234,88,12,0.25)] w-full max-w-[440px] mt-12"
           >
-            {/* Left: Thumbnail & Audio Bars */}
-            <div className="relative w-[68px] h-[68px] flex-shrink-0 rounded-[18px] overflow-hidden shadow-lg border border-white/10">
+            {/* Left: Huge Thumbnail */}
+            <div className="relative w-[85px] h-[85px] flex-shrink-0 rounded-[24px] overflow-hidden shadow-2xl border-2 border-white/10">
               <img src={currentSong.miniatura} alt="" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-black/40" />
+              <div className="absolute inset-0 bg-black/30" />
               
-              {/* Animated Audio Bars */}
-              <div className="absolute bottom-1.5 w-full flex justify-center items-end gap-0.5 h-3">
-                {[1, 2, 3, 4].map((i) => (
+              {/* Audio Bars */}
+              <div className="absolute bottom-2 w-full flex justify-center items-end gap-1 h-5">
+                {[1, 2, 3, 4, 5].map((i) => (
                   <motion.div
                     key={i}
-                    animate={{ height: [3, 10, 4, 12, 5] }}
+                    animate={{ height: [4, 18, 6, 24, 10] }}
                     transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.1 }}
-                    className="w-[3px] bg-orange-500 rounded-full"
+                    className="w-[4px] bg-orange-500 rounded-full shadow-[0_0_10px_rgba(234,88,12,1)]"
                   />
                 ))}
               </div>
             </div>
 
-            {/* Middle: Text Info */}
-            <div className="flex-1 min-w-0 pr-8 border-r border-white/10 space-y-0.5">
-              <div className="inline-block bg-orange-600 px-1.5 py-0.5 rounded-md mb-0.5 flex w-fit items-center gap-1">
-                 <div className="w-1 h-1 bg-white rounded-full animate-pulse" />
-                 <span className="text-[7.5px] font-black text-white uppercase tracking-wider">SONANDO AHORA</span>
+            {/* Middle: Info */}
+            <div className="flex-1 min-w-0 pr-12 space-y-1">
+              <div className="inline-flex bg-orange-600 px-2 py-0.5 rounded-md flex items-center gap-1.5 shadow-lg">
+                 <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                 <span className="text-[8px] font-black text-white uppercase tracking-widest">SONANDO AHORA</span>
               </div>
-              <h1 className="text-[13px] font-black text-white line-clamp-1 leading-tight uppercase tracking-tight" dangerouslySetInnerHTML={{ __html: currentSong.titulo }} />
-              <p className="text-[9px] text-white/60 font-bold truncate mb-1">Por: <span className="text-orange-400">{currentSong.usuario}</span></p>
+              <h1 className="text-[15px] font-black text-white line-clamp-1 leading-none uppercase tracking-tighter" dangerouslySetInnerHTML={{ __html: currentSong.titulo }} />
+              <p className="text-[10px] text-white/50 font-bold truncate">A pedido de: <span className="text-orange-400">{currentSong.usuario}</span></p>
               
-              <div className="inline-block bg-white/5 border border-white/10 px-2 py-[2px] rounded-full mt-1">
-                 <span className="text-[8.5px] font-black text-white uppercase tracking-widest">live.americolabs.com</span>
+              {/* THE LINK IN ONE LINE */}
+              <div className="bg-orange-500/10 border border-orange-500/30 px-3 py-1 rounded-full w-fit mt-2 shadow-inner">
+                 <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">live.americolabs.com</span>
               </div>
             </div>
 
-            {/* Right: Pop-out QR Code */}
-            <div className="absolute -top-8 -right-2 flex flex-col items-center flex-shrink-0">
-              <div className="bg-white p-1.5 rounded-2xl shadow-[0_15px_30px_rgba(234,88,12,0.4)] rotate-3 border-2 border-orange-500 hover:scale-105 transition-transform">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://live.americolabs.com" alt="QR" className="w-[64px] h-[64px] mix-blend-multiply" />
+            {/* Right: MASSIVE Pop-out QR */}
+            <div className="absolute -top-12 -right-3 flex flex-col items-center flex-shrink-0 group">
+              <div className="bg-white p-2 rounded-[28px] shadow-[0_20px_45px_rgba(0,0,0,0.8)] rotate-6 border-4 border-orange-600 group-hover:rotate-0 transition-transform duration-500">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://live.americolabs.com" alt="QR" className="w-[95px] h-[95px] mix-blend-multiply" />
               </div>
-            </div>
-            {/* Right Undertext */}
-            <div className="absolute bottom-3 right-3">
-               <span className="text-[7.5px] font-black text-orange-500 uppercase tracking-wider text-center leading-none">SÁCALE<br/>CAPTURA</span>
+              <div className="mt-2 bg-orange-600 px-3 py-1 rounded-full shadow-lg -rotate-3 mt-4">
+                 <span className="text-[9px] font-black text-white uppercase tracking-widest leading-none">SÁCALE CAPTURA</span>
+              </div>
             </div>
           </motion.div>
         )}
