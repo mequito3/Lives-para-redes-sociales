@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: pedidos
+    // Document ID: auto-generated
+    // Fields:
+    //   - usuario: string (required) - Nombre del usuario
+    //   - youtube_id: string (required) - ID del video
+    //   - titulo: string (required) - Título del video
+    //   - miniatura: string (optional) - URL de la miniatura
+    //   - reproducida: bool (required) - Estado de reproducción
+    //   - createdAt: timestamp (required) - Fecha de creación
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isValidPedido(data) {
+      return data.keys().hasAll(['usuario', 'youtube_id', 'titulo', 'reproducida', 'createdAt']) &&
+             data.usuario is string && data.usuario.size() > 0 && data.usuario.size() < 100 &&
+             data.youtube_id is string && data.youtube_id.size() > 0 &&
+             data.titulo is string && data.titulo.size() > 0 &&
+             data.reproducida is bool &&
+             data.createdAt is timestamp;
+    }
+
+    match /pedidos/{pedidoId} {
+      // Cualquiera puede leer los pedidos
+      allow read: if true;
+      
+      // Cualquiera puede crear un pedido
+      allow create: if isValidPedido(request.resource.data);
+      
+      // Cualquiera puede actualizar (marcar como reproducida) o borrar
+      // En este prototipo simplificado sin login, permitimos acceso total
+      allow update, delete: if true;
+    }
+
+    match /status/{statusId} {
+      // Cualquiera puede leer el estado
+      allow read: if true;
+      // Cualquiera puede actualizar el estado (en un entorno real esto estaría protegido)
+      allow write: if true;
+    }
+  }
+}

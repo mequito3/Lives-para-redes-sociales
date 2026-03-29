@@ -1,0 +1,5 @@
+{
+  "name": "LiveJukebox",
+  "description": "Sistema de peticiones musicales para streamers de TikTok usando YouTube API.",
+  "requestFramePermissions": []
+}

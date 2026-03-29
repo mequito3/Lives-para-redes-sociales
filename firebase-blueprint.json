@@ -1,0 +1,68 @@
+{
+  "entities": {
+    "status": {
+      "title": "Estado del Streamer",
+      "description": "Representa si el reproductor del streamer está activo.",
+      "type": "object",
+      "properties": {
+        "isLive": {
+          "type": "boolean",
+          "description": "Indica si el reproductor está activo."
+        },
+        "lastUpdated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Fecha de la última actualización del estado."
+        }
+      },
+      "required": ["isLive", "lastUpdated"]
+    },
+    "pedido": {
+      "title": "Pedido de Música",
+      "description": "Representa una petición de canción hecha por un usuario.",
+      "type": "object",
+      "properties": {
+        "usuario": {
+          "type": "string",
+          "description": "Nombre del usuario que hace la petición."
+        },
+        "youtube_id": {
+          "type": "string",
+          "description": "ID del video de YouTube."
+        },
+        "titulo": {
+          "type": "string",
+          "description": "Título de la canción."
+        },
+        "miniatura": {
+          "type": "string",
+          "description": "URL de la miniatura del video."
+        },
+        "reproducida": {
+          "type": "boolean",
+          "description": "Indica si la canción ya fue reproducida."
+        },
+        "mensaje": {
+          "type": "string",
+          "description": "Mensaje opcional del usuario para ser leído por TTS."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Fecha de creación del pedido."
+        }
+      },
+      "required": ["usuario", "youtube_id", "titulo", "reproducida", "createdAt"]
+    }
+  },
+  "firestore": {
+    "pedidos": {
+      "schema": "pedido",
+      "description": "Colección de peticiones musicales pendientes y reproducidas."
+    },
+    "status": {
+      "schema": "status",
+      "description": "Estado del reproductor del streamer."
+    }
+  }
+}
