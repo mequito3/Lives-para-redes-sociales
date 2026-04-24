@@ -714,6 +714,15 @@ function UserView({ apiKey }: { apiKey: string }) {
           )}
         </div>
       </div>
+
+      {/* Version badge */}
+      <div className="flex items-center justify-center gap-2 pt-8 pb-4">
+        <span className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1 rounded-full text-[10px] font-bold text-white/30 tracking-widest uppercase">
+          <Music className="w-2.5 h-2.5 text-orange-500/60" />
+          Live Jukebox
+          <span className="bg-orange-600/30 text-orange-400/80 px-1.5 py-0.5 rounded-full text-[9px]">v2.1</span>
+        </span>
+      </div>
     </div>
   );
 }
