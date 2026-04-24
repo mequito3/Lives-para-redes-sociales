@@ -2,16 +2,16 @@
     RewriteEngine On
     RewriteBase /
 
+    # Archivos JS/CSS compilados → dist/
+    RewriteRule ^index\.js$ /dist/index.js [L]
+    RewriteRule ^index\.css$ /dist/index.css [L]
+
     # API requests → api.php
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^api/(.*)$ api.php/api/$1 [L,QSA]
 
-    # JS/CSS assets → dist/assets/ (compiled by Vite)
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^assets/(.*)$ /dist/assets/$1 [L]
-
-    # Todo lo demás → dist/index.html (la app compilada, no el dev index.html)
+    # SPA (React Router) → dist/index.html (el compilado, NO el dev)
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule . /dist/index.html [L]
