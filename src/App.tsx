@@ -174,7 +174,7 @@ function AppContent() {
     )}>
       <Routes>
         <Route path="/" element={
-          <div className="min-h-screen">
+          <div className="min-h-[100dvh]">
             <main className="max-w-6xl mx-auto px-4 py-8">
               <UserView apiKey={apiKey} />
             </main>
@@ -276,7 +276,7 @@ function AppContent() {
                 </motion.div>
               </div>
             ) : (
-              <div className="min-h-screen bg-[#0a0a0a]">
+              <div className="min-h-[100dvh] bg-[#0a0a0a]">
                 <header className="max-w-6xl mx-auto px-4 pt-6 flex flex-wrap gap-3 items-center justify-between">
                   <div className="flex flex-wrap gap-2 items-center">
                     <Link 
@@ -487,25 +487,36 @@ function UserView({ apiKey }: { apiKey: string }) {
   const handleVote = async (song: SongRequest) => {
     if (!userName.trim()) {
       setMessage({ text: "Introduce tu nombre para votar.", type: 'error' });
+      setTimeout(() => setMessage(null), 3000);
       return;
     }
 
     const yaVoto = song.votosUsuarios?.includes(userName);
     if (yaVoto) {
       setMessage({ text: "Ya has votado por esta canción.", type: 'error' });
+      setTimeout(() => setMessage(null), 3000);
       return;
     }
 
+    const newVotos = (song.votos || 0) + 1;
+    const newVotosUsuarios = [...(song.votosUsuarios || []), userName];
+
+    // Optimistic update — el contador sube al instante sin esperar el poll
+    setQueue(prev => prev.map(s =>
+      s.id === song.id ? { ...s, votos: newVotos, votosUsuarios: newVotosUsuarios } : s
+    ));
+
     try {
-      const newVotos = (song.votos || 0) + 1;
-      const newVotosUsuarios = [...(song.votosUsuarios || []), userName];
-      
       await updateSongRequestAPI(song.id, {
         votos: newVotos,
         votosUsuarios: newVotosUsuarios
       });
     } catch (err) {
       console.error("Error al votar:", err);
+      // Revert on error
+      setQueue(prev => prev.map(s =>
+        s.id === song.id ? { ...s, votos: song.votos, votosUsuarios: song.votosUsuarios } : s
+      ));
     }
   };
 
