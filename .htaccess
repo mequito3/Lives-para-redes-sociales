@@ -1,17 +1,24 @@
+# Servir la app compilada cuando se pide un directorio (ej: /)
+DirectoryIndex dist/index.html
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /
 
-    # Archivos JS/CSS compilados → dist/
+    # MIME types correctos para modulos ES (evita el error "text/plain")
+    AddType application/javascript .js .mjs
+    AddType text/css .css
+
+    # JS y CSS compilados van a dist/
     RewriteRule ^index\.js$ /dist/index.js [L]
     RewriteRule ^index\.css$ /dist/index.css [L]
 
-    # API requests → api.php
+    # API → api.php
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^api/(.*)$ api.php/api/$1 [L,QSA]
 
-    # SPA (React Router) → dist/index.html (el compilado, NO el dev)
+    # Rutas del SPA (/, /admin, /overlay) → dist/index.html
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule . /dist/index.html [L]
