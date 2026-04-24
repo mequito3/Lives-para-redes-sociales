@@ -28,7 +28,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { fetchPendingRequests, createSongRequest, updateSongRequestAPI, deleteSongRequestAPI, fetchStreamerStatus, updateStreamerStatusAPI } from './api-client';
-import { initializeSocket, onSongsUpdated, onStatusUpdated, offSongsUpdated, offStatusUpdated, requestSongs, requestStatus } from './socket-client';
 import { cn } from './lib/utils';
 
 // --- Types ---
@@ -141,7 +140,13 @@ export default function App() {
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('jukebox_api_key') || import.meta.env.VITE_YOUTUBE_API_KEY || '');
+  const [apiKey, setApiKey] = useState(() => {
+    const stored = localStorage.getItem('jukebox_api_key');
+    if (stored) return stored;
+    // Handle comma-separated keys in .env — take the first valid one
+    const envKey = import.meta.env.VITE_YOUTUBE_API_KEY || '';
+    return envKey.split(',')[0].trim();
+  });
   const [showConfig, setShowConfig] = useState(false);
   const [streamerPass, setStreamerPass] = useState('');
   const [isStreamerAuth, setIsStreamerAuth] = useState(false);
@@ -164,7 +169,7 @@ function AppContent() {
 
   return (
     <div className={cn(
-      "min-h-screen text-white font-sans selection:bg-orange-500/30",
+      "min-h-[100dvh] text-white font-sans selection:bg-orange-500/30",
       location.pathname === '/overlay' ? "bg-transparent" : "bg-[#0a0a0a]"
     )}>
       <Routes>
@@ -328,36 +333,27 @@ function UserView({ apiKey }: { apiKey: string }) {
   const [requesting, setRequesting] = useState<string | null>(null);
   const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
   const [queue, setQueue] = useState<SongRequest[]>([]);
-  const [isLive, setIsLive] = useState(true); // Default to true to avoid initial flicker
+  const [isLive, setIsLive] = useState(true);
+  const [requestedId, setRequestedId] = useState<string | null>(null);
 
   // Persist username
   useEffect(() => {
     localStorage.setItem('jukebox_user', userName);
   }, [userName]);
 
-  // Initialize Socket.IO connection
+  // Poll streamer status every 10 seconds
   useEffect(() => {
-    initializeSocket();
-    requestStatus(); // Request initial status
-    requestSongs(); // Request initial songs
-  }, []);
-
-  // Listen to streamer status via Socket.IO
-  useEffect(() => {
-    onStatusUpdated((status) => {
-      setIsLive(status.isLive);
-    });
-
-    return () => offStatusUpdated();
-  }, []);
-
-  // Listen to queue via Socket.IO
-  useEffect(() => {
-    onSongsUpdated((songs) => {
-      setQueue(songs);
-    });
-
-    return () => offSongsUpdated();
+    const fetchStatus = async () => {
+      try {
+        const status = await fetchStreamerStatus();
+        setIsLive(status.isLive);
+      } catch (error) {
+        console.error('Error fetching status:', error);
+      }
+    };
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   // Dynamic search with debounce
@@ -367,7 +363,6 @@ function UserView({ apiKey }: { apiKey: string }) {
         searchSongs();
       } else if (queryStr.trim().length === 0) {
         setResults([]);
-        setMessage(null);
       }
     }, 600);
 
@@ -470,15 +465,22 @@ function UserView({ apiKey }: { apiKey: string }) {
         votos: 0,
         votosUsuarios: []
       });
-      setMessage({ text: "¡Canción pedida con éxito!", type: 'success' });
-      setQueryStr('');
-      setResults([]);
+
+      // Mostrar éxito en la tarjeta antes de limpiar — evita pantalla en blanco en móvil
+      setRequestedId(videoId);
+      setMessage({ text: "¡Canción añadida a la cola!", type: 'success' });
+      setTimeout(() => {
+        setQueryStr('');
+        setResults([]);
+        setRequestedId(null);
+        setMessage(null);
+      }, 2500);
     } catch (err: any) {
       console.error(err);
       setMessage({ text: "Error al pedir: " + err.message, type: 'error' });
+      setTimeout(() => setMessage(null), 4000);
     } finally {
       setRequesting(null);
-      setTimeout(() => setMessage(null), 3000);
     }
   };
 
@@ -600,13 +602,23 @@ function UserView({ apiKey }: { apiKey: string }) {
               </div>
               <div className="p-4 space-y-3">
                 <h3 className="font-medium line-clamp-2 h-12" dangerouslySetInnerHTML={{ __html: video.snippet.title }} />
-                <button 
+                <button
                   onClick={() => handleRequest(video)}
-                  disabled={requesting === video.id.videoId}
-                  className="w-full bg-white text-black hover:bg-orange-500 hover:text-white py-2 rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
+                  disabled={requesting === video.id.videoId || requestedId === video.id.videoId}
+                  className={cn(
+                    "w-full py-2 rounded-xl font-semibold transition-all flex items-center justify-center gap-2",
+                    requestedId === video.id.videoId
+                      ? "bg-green-500 text-white cursor-default"
+                      : "bg-white text-black hover:bg-orange-500 hover:text-white"
+                  )}
                 >
                   {requesting === video.id.videoId ? (
                     'Pidiendo...'
+                  ) : requestedId === video.id.videoId ? (
+                    <>
+                      <CheckCircle className="w-4 h-4" />
+                      ¡Pedida!
+                    </>
                   ) : (
                     <>
                       Pedir Canción
@@ -710,7 +722,7 @@ function StreamerView() {
   const [playerReady, setPlayerReady] = useState(false);
   const [hasStarted, setHasStarted] = useState(() => localStorage.getItem('jukebox_started') === 'true');
   const playerRef = useRef<any>(null);
-  const currentSongIdRef = useRef<string | null>(null);
+  const currentSongIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     localStorage.setItem('jukebox_started', String(hasStarted));
@@ -746,7 +758,7 @@ function StreamerView() {
 
   // Update ref when currentSong changes
   useEffect(() => {
-    currentSongIdRef.current = currentSong?.id || null;
+    currentSongIdRef.current = currentSong?.id ?? null;
   }, [currentSong?.id, hasStarted]);
 
   // Cargar API de YouTube
@@ -767,23 +779,25 @@ function StreamerView() {
     }
   }, []);
 
-  // Escuchar pedidos via Socket.IO
+  // Poll queue every 3 seconds
   useEffect(() => {
-    initializeSocket();
-
-    onSongsUpdated((list) => {
-      setPedidos(list);
-
-      // Check if the current song is still in the pending list
-      const isCurrentStillPending = list.some(s => s.id === currentSongIdRef.current);
-
-      // If no song is playing OR the current song is no longer in the pending list, pick the first one
-      if (list.length > 0 && (!currentSongIdRef.current || !isCurrentStillPending)) {
-        setCurrentSong(list[0]);
+    const fetchQueue = async () => {
+      try {
+        const list = await fetchPendingRequests();
+        setPedidos(list);
+        const isCurrentStillPending = list.some(s => s.id === currentSongIdRef.current);
+        if (list.length > 0 && (currentSongIdRef.current == null || !isCurrentStillPending)) {
+          setCurrentSong(list[0]);
+        } else if (list.length === 0) {
+          setCurrentSong(null);
+        }
+      } catch (error) {
+        console.error('Error fetching queue:', error);
       }
-    });
-
-    return () => offSongsUpdated();
+    };
+    fetchQueue();
+    const interval = setInterval(fetchQueue, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   // Inicializar o actualizar el reproductor
@@ -802,17 +816,15 @@ function StreamerView() {
           },
           events: {
             onStateChange: (event: any) => {
-              // event.data === 0 means the video has ended
               if (event.data === 0) {
-                if (currentSongIdRef.current) {
+                if (currentSongIdRef.current != null) {
                   markAsPlayed(currentSongIdRef.current);
                 }
               }
             },
             onError: (event: any) => {
               console.error("YouTube Player Error:", event.data);
-              // If there's an error, skip to the next song
-              if (currentSongIdRef.current) {
+              if (currentSongIdRef.current != null) {
                 markAsPlayed(currentSongIdRef.current);
               }
             },
@@ -836,12 +848,12 @@ function StreamerView() {
     }
   }, [playerReady, currentSong, hasStarted]);
 
-  const markingRef = useRef<string | null>(null);
+  const markingRef = useRef<number | null>(null);
 
-  const markAsPlayed = async (id: string) => {
-    if (!id || markingRef.current === id) return;
+  const markAsPlayed = async (id: number) => {
+    if (id == null || markingRef.current === id) return;
     markingRef.current = id;
-    
+
     // Optimistic update: find next song in current list
     const currentIndex = pedidos.findIndex(p => p.id === id);
     if (currentIndex !== -1 && currentIndex < pedidos.length - 1) {
@@ -1017,20 +1029,25 @@ function OverlayView() {
   const [currentSong, setCurrentSong] = useState<SongRequest | null>(null);
   const [nextSong, setNextSong] = useState<SongRequest | null>(null);
 
+  // Poll queue every 3 seconds for overlay
   useEffect(() => {
-    initializeSocket();
-
-    onSongsUpdated((list) => {
-      if (list.length > 0) {
-        setCurrentSong(list[0]);
-        setNextSong(list[1] || null);
-      } else {
-        setCurrentSong(null);
-        setNextSong(null);
+    const fetchQueue = async () => {
+      try {
+        const list = await fetchPendingRequests();
+        if (list.length > 0) {
+          setCurrentSong(list[0]);
+          setNextSong(list[1] || null);
+        } else {
+          setCurrentSong(null);
+          setNextSong(null);
+        }
+      } catch (error) {
+        console.error('Overlay: Error fetching queue:', error);
       }
-    });
-
-    return () => offSongsUpdated();
+    };
+    fetchQueue();
+    const interval = setInterval(fetchQueue, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   return (

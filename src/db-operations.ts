@@ -25,7 +25,7 @@ export async function getPendingRequests(): Promise<SongRequest[]> {
     const [rows] = await pool.execute(
       'SELECT id, usuario, youtube_id, titulo, miniatura, reproducida, duracion, votos, votos_usuarios as votosUsuarios, created_at as createdAt FROM song_requests WHERE reproducida = false ORDER BY votos DESC, created_at ASC'
     );
-    console.log(`📊 Query returned ${rows.length} rows`);
+    console.log(`📊 Query returned ${(rows as any[]).length} rows`);
     return (rows as any[]).map(row => {
       let votosUsuarios: string[] = [];
       try {

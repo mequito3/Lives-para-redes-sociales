@@ -19,17 +19,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 $is_local = ($_SERVER['REMOTE_ADDR'] == '127.0.0.1' || $_SERVER['REMOTE_ADDR'] == '::1' || strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') !== false);
 
 if ($is_local) {
-    // Configuración para Laragon (Local)
-    $db_host = 'localhost';
-    $db_user = 'root';
-    $db_pass = '';
-    $db_name = 'livejukebox';
+    $db_host = getenv('DB_HOST') ?: 'localhost';
+    $db_user = getenv('DB_USER') ?: 'root';
+    $db_pass = getenv('DB_PASSWORD') ?: '';
+    $db_name = getenv('DB_NAME') ?: 'livejukebox';
 } else {
-    // Configuración para Hostinger (Producción)
-    $db_host = '127.0.0.1';
-    $db_user = 'u636084353_lives';
-    $db_pass = 'livesRedes123';
-    $db_name = 'u636084353_lives';
+    $db_host = getenv('DB_HOST') ?: '127.0.0.1';
+    $db_user = getenv('DB_USER') ?: 'u636084353_lives';
+    $db_pass = getenv('DB_PASSWORD') ?: 'livesRedes123';
+    $db_name = getenv('DB_NAME') ?: 'u636084353_lives';
 }
 
 try {
