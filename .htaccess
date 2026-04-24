@@ -1,14 +1,18 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /
-    
-    # Route all /api/ requests to api.php
+
+    # API requests → api.php
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^api/(.*)$ api.php/api/$1 [L,QSA]
-    
-    # Ensure index.html is served for React Router (SPA)
+
+    # JS/CSS assets → dist/assets/ (compiled by Vite)
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^assets/(.*)$ /dist/assets/$1 [L]
+
+    # Todo lo demás → dist/index.html (la app compilada, no el dev index.html)
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule . /index.html [L]
+    RewriteRule . /dist/index.html [L]
 </IfModule>
